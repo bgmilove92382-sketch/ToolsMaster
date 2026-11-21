@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvDeviceInfo, tvEngineStatus, tvLog;
     private Spinner spGame, spResolution, spGraphics, spFps, spStyle;
     private Switch swShadow, swZeroLag;
-    private IFileService fileService;
+    private volatile IFileService fileService;
 
     private final String[] gameLabels = {"India (BGMI)", "Global (PUBG)", "Korean (KR)", "Vietnam (VN)", "Taiwan (TW)", "PUBG Lite"};
     private final String[] gamePkgs = {"com.pubg.imobile", "com.tencent.ig", "com.pubg.krmobile", "com.vng.pubgmobile", "com.rekoo.pubgm", "com.tencent.iglite"};
@@ -38,15 +38,20 @@ public class MainActivity extends AppCompatActivity {
     private final Shizuku.UserServiceArgs serviceArgs = new Shizuku.UserServiceArgs(
             new ComponentName("com.ninjamaxyt.toolsmaster", FileService.class.getName()))
             .daemon(false)
-            .processNameSuffix("service")
-            .debuggable(false)
-            .version(1);
+            .processNameSuffix("filesvc")
+            .debuggable(true)
+            .version(2);
 
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder binder) {
-            fileService = IFileService.Stub.asInterface(binder);
-            runOnUiThread(() -> updateStatus());
+            if (binder != null && binder.pingBinder()) {
+                fileService = IFileService.Stub.asInterface(binder);
+                runOnUiThread(() -> {
+                    updateStatus();
+                    Toast.makeText(MainActivity.this, "Shizuku Engine Connected!", Toast.LENGTH_SHORT).show();
+                });
+            }
         }
 
         @Override
@@ -55,6 +60,13 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> updateStatus());
         }
     };
+
+    private final Shizuku.OnBinderReceivedListener binderListener = () -> runOnUiThread(() -> {
+        if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
+            bindShizukuService();
+        }
+        updateStatus();
+    });
 
     private final Shizuku.OnRequestPermissionResultListener shizukuListener = (requestCode, grantResult) -> {
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
@@ -88,11 +100,8 @@ public class MainActivity extends AppCompatActivity {
         setupSpinner(spStyle, styleLabels);
 
         try {
+            Shizuku.addBinderReceivedListenerSticky(binderListener);
             Shizuku.addRequestPermissionResultListener(shizukuListener);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Shizuku.pingBinder()
-                    && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-                bindShizukuService();
-            }
         } catch (Throwable ignored) {}
         updateStatus();
 
@@ -134,7 +143,9 @@ public class MainActivity extends AppCompatActivity {
             if (fileService == null) {
                 Shizuku.bindUserService(serviceArgs, serviceConnection);
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            tvLog.setText("Bind Error: " + t.getMessage());
+        }
     }
 
     private void setupSpinner(Spinner sp, String[] items) {
@@ -149,9 +160,9 @@ public class MainActivity extends AppCompatActivity {
                 if (Shizuku.pingBinder()) {
                     boolean granted = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
                     if (granted && fileService != null) {
-                        tvEngineStatus.setText("Engine Mode: Shizuku Service Connected (Android 11-16 Ready)");
+                        tvEngineStatus.setText("Engine Mode: Shizuku Service Connected (Ready)");
                     } else if (granted) {
-                        tvEngineStatus.setText("Engine Mode: Shizuku Permitted — Binding Service...");
+                        tvEngineStatus.setText("Engine Mode: Shizuku Permitted — Tap Button to Connect");
                     } else {
                         tvEngineStatus.setText("Engine Mode: Shizuku Running — Tap Grant Access");
                     }
@@ -174,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                         Shizuku.requestPermission(101);
                     } else {
                         bindShizukuService();
-                        Toast.makeText(this, "Shizuku Access Ready!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Connecting Shizuku Service...", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(this, "Please start Shizuku service first!", Toast.LENGTH_LONG).show();
@@ -197,13 +208,13 @@ public class MainActivity extends AppCompatActivity {
         boolean shadow = swShadow.isChecked();
         boolean zeroLag = swZeroLag.isChecked();
 
-        tvLog.setText("Status: Patching binary Active.sav & INI configs...");
+        tvLog.setText("Status: Patching Active.sav & INI into " + pkg + "...");
         new Thread(() -> {
             try {
                 ConfigEngine.patchAndApply(this, pkg, fileService, res, gfx, fps, style, shadow, zeroLag);
                 runOnUiThread(() -> {
-                    tvLog.setText("Status: APPLIED via Shizuku! Do NOT tap FPS buttons inside game.");
-                    Toast.makeText(this, "Settings Applied Successfully!", Toast.LENGTH_LONG).show();
+                    tvLog.setText("Status: APPLIED to BGMI! (Active.sav & INI written)");
+                    Toast.makeText(this, "Applied to BGMI! Launch Game Now.", Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -225,6 +236,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         try {
+            Shizuku.removeBinderReceivedListener(binderListener);
             Shizuku.removeRequestPermissionResultListener(shizukuListener);
             Shizuku.unbindUserService(serviceArgs, serviceConnection, true);
         } catch (Throwable ignored) {}
