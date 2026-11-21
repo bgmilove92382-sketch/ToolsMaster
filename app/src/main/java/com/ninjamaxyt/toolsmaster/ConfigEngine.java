@@ -6,12 +6,12 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import rikka.shizuku.Shizuku;
 
 public class ConfigEngine {
 
-    public static void patchAndApply(Context ctx, String pkgName, int resScale, int gfxVal, int fpsVal, int styleVal, boolean shadow, boolean zeroLag) throws Exception {
-        File cacheOut = new File(ctx.getCacheDir(), "patched_files");
+    public static void patchAndApply(Context ctx, String pkgName, IFileService shizukuService, int resScale, int gfxVal, int fpsVal, int styleVal, boolean shadow, boolean zeroLag) throws Exception {
+        File cacheOut = new File(ctx.getExternalCacheDir(), "patched_files");
+        if (cacheOut.exists()) deleteRecursive(cacheOut);
         File cfgOut = new File(cacheOut, "UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android");
         File savOut = new File(cacheOut, "UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames");
         cfgOut.mkdirs();
@@ -39,13 +39,14 @@ public class ConfigEngine {
         writeBytes(new File(savOut, "SettingConfig_Slot.sav"), savData);
 
         String targetBase = "/storage/emulated/0/Android/data/" + pkgName + "/files";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Shizuku.pingBinder()) {
-            String cmd = "mkdir -p '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android' '" +
-                         targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames' && " +
-                         "cp -rf '" + cacheOut.getAbsolutePath() + "/UE4Game' '" + targetBase + "/'";
-            Process p = Shizuku.newProcess(new String[]{"sh", "-c", cmd}, null, null);
-            int code = p.waitFor();
-            if (code != 0) throw new Exception("Shizuku copy failed (code " + code + ")");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (shizukuService == null) {
+                throw new Exception("Shizuku Service not bound! Tap 'Grant Shizuku Access' first.");
+            }
+            String res = shizukuService.copyConfigs(cacheOut.getAbsolutePath(), targetBase);
+            if (!"OK".equals(res)) {
+                throw new Exception(res);
+            }
         } else {
             copyRecursive(cacheOut, new File(targetBase));
         }
@@ -91,19 +92,29 @@ public class ConfigEngine {
     }
 
     private static byte[] readAssetBytes(Context ctx, String name) throws Exception {
-        InputStream is = ctx.getAssets().open(name);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int n;
-        while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
-        is.close();
-        return bos.toByteArray();
+        try (InputStream is = ctx.getAssets().open(name);
+             ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = is.read(buf)) != -1) bos.write(buf, 0, n);
+            return bos.toByteArray();
+        }
     }
 
     private static void writeBytes(File f, byte[] data) throws Exception {
-        FileOutputStream fos = new FileOutputStream(f);
-        fos.write(data);
-        fos.close();
+        try (FileOutputStream fos = new FileOutputStream(f)) {
+            fos.write(data);
+        }
+    }
+
+    private static void deleteRecursive(File f) {
+        if (f.isDirectory()) {
+            File[] children = f.listFiles();
+            if (children != null) {
+                for (File c : children) deleteRecursive(c);
+            }
+        }
+        f.delete();
     }
 
     private static void copyRecursive(File src, File dst) throws Exception {
@@ -114,13 +125,12 @@ public class ConfigEngine {
                 for (String child : children) copyRecursive(new File(src, child), new File(dst, child));
             }
         } else {
-            FileInputStream in = new FileInputStream(src);
-            FileOutputStream out = new FileOutputStream(dst);
-            byte[] buf = new byte[4096];
-            int len;
-            while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
-            in.close();
-            out.close();
+            try (FileInputStream in = new FileInputStream(src);
+                 FileOutputStream out = new FileOutputStream(dst)) {
+                byte[] buf = new byte[4096];
+                int len;
+                while ((len = in.read(buf)) > 0) out.write(buf, 0, len);
+            }
         }
     }
 }
