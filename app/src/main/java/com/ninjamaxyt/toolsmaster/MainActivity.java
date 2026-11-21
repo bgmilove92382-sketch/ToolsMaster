@@ -1,13 +1,10 @@
 package com.ninjamaxyt.toolsmaster;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -18,7 +15,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvDeviceInfo, tvEngineStatus, tvLog;
     private Spinner spGame, spResolution, spGraphics, spFps, spStyle;
     private Switch swShadow, swZeroLag;
-    private volatile IFileService fileService;
 
     private final String[] gameLabels = {"India (BGMI)", "Global (PUBG)", "Korean (KR)", "Vietnam (VN)", "Taiwan (TW)", "PUBG Lite"};
     private final String[] gamePkgs = {"com.pubg.imobile", "com.tencent.ig", "com.pubg.krmobile", "com.vng.pubgmobile", "com.rekoo.pubgm", "com.tencent.iglite"};
@@ -35,45 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private final String[] styleLabels = {"Colorful", "Classic", "Realistic", "Soft", "Movie"};
     private final int[] styleVals = {1, 0, 2, 3, 4};
 
-    private final Shizuku.UserServiceArgs serviceArgs = new Shizuku.UserServiceArgs(
-            new ComponentName("com.ninjamaxyt.toolsmaster", FileService.class.getName()))
-            .daemon(false)
-            .processNameSuffix("filesvc")
-            .debuggable(true)
-            .version(2);
-
-    private final ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            if (binder != null && binder.pingBinder()) {
-                fileService = IFileService.Stub.asInterface(binder);
-                runOnUiThread(() -> {
-                    updateStatus();
-                    Toast.makeText(MainActivity.this, "Shizuku Engine Connected!", Toast.LENGTH_SHORT).show();
-                });
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            fileService = null;
-            runOnUiThread(() -> updateStatus());
-        }
-    };
-
-    private final Shizuku.OnBinderReceivedListener binderListener = () -> runOnUiThread(() -> {
-        if (Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED) {
-            bindShizukuService();
-        }
-        updateStatus();
-    });
-
-    private final Shizuku.OnRequestPermissionResultListener shizukuListener = (requestCode, grantResult) -> {
-        if (grantResult == PackageManager.PERMISSION_GRANTED) {
-            bindShizukuService();
-        }
-        updateStatus();
-    };
+    private final Shizuku.OnBinderReceivedListener binderListener = () -> runOnUiThread(this::updateStatus);
+    private final Shizuku.OnRequestPermissionResultListener shizukuListener = (requestCode, grantResult) -> runOnUiThread(this::updateStatus);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,16 +97,6 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnLaunch).setOnClickListener(v -> launchGame());
     }
 
-    private void bindShizukuService() {
-        try {
-            if (fileService == null) {
-                Shizuku.bindUserService(serviceArgs, serviceConnection);
-            }
-        } catch (Throwable t) {
-            tvLog.setText("Bind Error: " + t.getMessage());
-        }
-    }
-
     private void setupSpinner(Spinner sp, String[] items) {
         ArrayAdapter<String> ad = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, items);
         ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -159,13 +108,9 @@ public class MainActivity extends AppCompatActivity {
             try {
                 if (Shizuku.pingBinder()) {
                     boolean granted = Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
-                    if (granted && fileService != null) {
-                        tvEngineStatus.setText("Engine Mode: Shizuku Service Connected (Ready)");
-                    } else if (granted) {
-                        tvEngineStatus.setText("Engine Mode: Shizuku Permitted — Tap Button to Connect");
-                    } else {
-                        tvEngineStatus.setText("Engine Mode: Shizuku Running — Tap Grant Access");
-                    }
+                    tvEngineStatus.setText(granted
+                            ? "Engine Mode: Shizuku Active & Ready (Android 11-16)"
+                            : "Engine Mode: Shizuku Running — Tap Grant Access");
                 } else {
                     tvEngineStatus.setText("Engine Mode: Shizuku Not Running (Start Shizuku App)");
                 }
@@ -184,8 +129,7 @@ public class MainActivity extends AppCompatActivity {
                     if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
                         Shizuku.requestPermission(101);
                     } else {
-                        bindShizukuService();
-                        Toast.makeText(this, "Connecting Shizuku Service...", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Shizuku Permission Already Granted & Ready!", Toast.LENGTH_SHORT).show();
                     }
                 } else {
                     Toast.makeText(this, "Please start Shizuku service first!", Toast.LENGTH_LONG).show();
@@ -211,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
         tvLog.setText("Status: Patching Active.sav & INI into " + pkg + "...");
         new Thread(() -> {
             try {
-                ConfigEngine.patchAndApply(this, pkg, fileService, res, gfx, fps, style, shadow, zeroLag);
+                ConfigEngine.patchAndApply(this, pkg, res, gfx, fps, style, shadow, zeroLag);
                 runOnUiThread(() -> {
                     tvLog.setText("Status: APPLIED to BGMI! (Active.sav & INI written)");
                     Toast.makeText(this, "Applied to BGMI! Launch Game Now.", Toast.LENGTH_LONG).show();
@@ -238,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
         try {
             Shizuku.removeBinderReceivedListener(binderListener);
             Shizuku.removeRequestPermissionResultListener(shizukuListener);
-            Shizuku.unbindUserService(serviceArgs, serviceConnection, true);
         } catch (Throwable ignored) {}
     }
 }

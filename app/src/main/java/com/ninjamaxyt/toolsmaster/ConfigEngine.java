@@ -2,14 +2,18 @@ package com.ninjamaxyt.toolsmaster;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.IBinder;
+import android.os.Parcel;
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import rikka.shizuku.Shizuku;
 
 public class ConfigEngine {
 
-    public static void patchAndApply(Context ctx, String pkgName, IFileService shizukuService, int resScale, int gfxVal, int fpsVal, int styleVal, boolean shadow, boolean zeroLag) throws Exception {
+    public static void patchAndApply(Context ctx, String pkgName, int resScale, int gfxVal, int fpsVal, int styleVal, boolean shadow, boolean zeroLag) throws Exception {
         File cacheOut = new File(ctx.getExternalCacheDir(), "patched_files");
         if (cacheOut.exists()) deleteRecursive(cacheOut);
         File cfgOut = new File(cacheOut, "UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android");
@@ -40,15 +44,30 @@ public class ConfigEngine {
 
         String targetBase = "/storage/emulated/0/Android/data/" + pkgName + "/files";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (shizukuService == null) {
-                throw new Exception("Shizuku Service not bound! Tap 'Grant Shizuku Access' first.");
+            if (!Shizuku.pingBinder()) {
+                throw new Exception("Shizuku is not running! Open Shizuku app and start service.");
             }
-            String res = shizukuService.copyConfigs(cacheOut.getAbsolutePath(), targetBase);
-            if (!"OK".equals(res)) {
-                throw new Exception(res);
-            }
+            String cmd = "mkdir -p '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android' '" +
+                         targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames' && " +
+                         "cp -f '" + cfgOut.getAbsolutePath() + "/GameUserSettings.ini' '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/' && " +
+                         "cp -f '" + cfgOut.getAbsolutePath() + "/UserCustom.ini' '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Config/Android/' && " +
+                         "cp -f '" + savOut.getAbsolutePath() + "/Active.sav' '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/' && " +
+                         "cp -f '" + savOut.getAbsolutePath() + "/SettingConfig_Slot.sav' '" + targetBase + "/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/SaveGames/'";
+            runShizukuShell(cmd);
         } else {
             copyRecursive(cacheOut, new File(targetBase));
+        }
+    }
+
+    private static void runShizukuShell(String command) throws Exception {
+        Method newProc = Shizuku.class.getDeclaredMethod("newProcess", String[].class, String[].class, String.class);
+        newProc.setAccessible(true);
+        Process p = (Process) newProc.invoke(null, new String[]{"sh", "-c", command}, null, null);
+        int exit = p.waitFor();
+        if (exit != 0) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+            String err = br.readLine();
+            throw new Exception("Shizuku shell failed (" + exit + "): " + (err != null ? err : "Check target game folder"));
         }
     }
 
