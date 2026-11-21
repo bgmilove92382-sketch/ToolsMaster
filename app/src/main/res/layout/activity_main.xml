@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_black"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TOOLS MASTER"
+                android:textColor="@color/neon_green"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card_neon"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="v1.0 • BGMI 4.7"
+                android:textColor="@color/text_white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card_neon"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:id="@+id/tvDeviceInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Device: Detecting..."
+                android:textColor="@color/text_white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvEngineStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Engine Mode: Checking..."
+                android:textColor="@color/neon_green"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnGrantAccess"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="@color/neon_green"
+                android:text="Grant Shizuku / Storage Access"
+                android:textColor="@color/bg_black"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ONE-TAP PRO PRESETS"
+            android:textColor="@color/text_gray"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btnPreset60"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:backgroundTint="@color/card_dark"
+                android:text="Zero Lag 60"
+                android:textColor="@color/neon_green"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnPreset90"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="3dp"
+                android:backgroundTint="@color/card_dark"
+                android:text="Pro 90 FPS"
+                android:textColor="@color/neon_green"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnPreset120"
+                android:layout_width="0dp"
+                android:layout_height="44dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:backgroundTint="@color/card_dark"
+                android:text="Ultra 120 FPS"
+                android:textColor="@color/neon_green"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_card_neon"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="CUSTOM GRAPHICS ENGINE"
+                android:textColor="@color/neon_green"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Game Variant" android:textColor="@color/text_gray" android:textSize="12sp" />
+            <Spinner android:id="@+id/spGame" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="10dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Resolution" android:textColor="@color/text_gray" android:textSize="12sp" />
+            <Spinner android:id="@+id/spResolution" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="10dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Graphics Quality" android:textColor="@color/text_gray" android:textSize="12sp" />
+            <Spinner android:id="@+id/spGraphics" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="10dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Frame Rate (FPS Unlocker)" android:textColor="@color/text_gray" android:textSize="12sp" />
+            <Spinner android:id="@+id/spFps" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="10dp" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Color Style" android:textColor="@color/text_gray" android:textSize="12sp" />
+            <Spinner android:id="@+id/spStyle" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginBottom="10dp" />
+
+            <Switch
+                android:id="@+id/swShadow"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:checked="false"
+                android:text="Enable Shadows (Disable for Max FPS)"
+                android:textColor="@color/text_white" />
+
+            <Switch
+                android:id="@+id/swZeroLag"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:checked="true"
+                android:text="Zero-Lag Optimization Profile"
+                android:textColor="@color/text_white" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnApply"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:backgroundTint="@color/neon_green"
+            android:text="APPLY SETTINGS TO GAME"
+            android:textColor="@color/bg_black"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnLaunch"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:backgroundTint="@color/card_dark"
+            android:text="LAUNCH GAME"
+            android:textColor="@color/neon_green"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Status: Ready to apply."
+            android:textColor="@color/text_gray"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</ScrollView>
