@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private final int[] resScales = {50, 60, 70, 80, 90, 100};
 
     private final String[] gfxLabels = {"Super Smooth (Max FPS)", "Smooth", "Balanced", "HD", "HDR"};
-    private final int[] gfxVals = {0, 0, 1, 2, 3};
+    private final int[] gfxVals = {-1, 0, 1, 2, 3};
 
     private final String[] fpsLabels = {"Extreme (60 FPS)", "Extreme+ (90 FPS)", "Ultra Extreme (120 FPS)", "Ultra (40 FPS)", "High (30 FPS)"};
     private final int[] fpsVals = {6, 7, 8, 4, 3};
